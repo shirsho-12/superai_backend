@@ -10,7 +10,7 @@ import json
 
 # Import agents
 from agents.amendment_generator import AmendmentGenerator
-import httpx
+import aiohttp
 
 from storage.s3_service import s3_service
 
@@ -98,18 +98,17 @@ class AmendmentResponse(BaseModel):
 async def root():
     return {"message": "Welcome to CompliAgent Horizon API"}
 
-@app.post("/api/analyze", response_model=AnalysisResponse)
+@app.post("/api/analyze", response_model=Dict)
 async def analyze_gaps():
     """
     Analyze gaps between a regulation and a policy
     """
     try:
-
-        async with httpx.AsyncClient() as client:
+        async with aiohttp.ClientSession() as client:
             response = await client.get(
                 "https://u4bqsvoj2balkjevdnuxmv4kvi0czgzo.lambda-url.us-west-2.on.aws/"
             )
-            return response.json()
+            return await response.json()
         
     except HTTPException:
         raise
