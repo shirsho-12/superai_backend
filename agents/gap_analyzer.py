@@ -12,15 +12,13 @@ class GapAnalyzer:
         self.knowledge_base_id = os.getenv('REGULATIONS_KB_ID')
         self.agent_id = os.getenv('GAP_ANALYSIS_AGENT_ID')
         self.model_id = os.getenv('GAP_ANALYSIS_MODEL', 'anthropic.claude-3-sonnet-20240229-v1:0')
-
-    async def analyze_gaps(self, regulation_id: str, policy_id: str, policy_content: str) -> Dict[str, Any]:
+    async def analyze_gaps(self, policy_id: str, policy_content: str) -> Dict[str, Any]:
         """
-        Analyze gaps between a regulation and a policy document
+        Analyze gaps between the regulation and a policy document
         """
         prompt = f"""
         You are a compliance analyst. Analyze the following policy document against the regulation.
         
-        Regulation ID: {regulation_id}
         Policy ID: {policy_id}
         
         Policy Content:
@@ -40,6 +38,7 @@ class GapAnalyzer:
         try:
             response = self.bedrock_runtime.invoke_model(
                 modelId=self.model_id,
+                knowledgeBaseId=self.knowledge_base_id,
                 body=json.dumps({
                     "prompt": prompt,
                     "max_tokens_to_sample": 1000,

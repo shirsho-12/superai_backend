@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 import json
 
 # Import agents
-from agents.gap_analyzer import GapAnalyzer
 from agents.amendment_generator import AmendmentGenerator
+import httpx
 
 from storage.s3_service import s3_service
 
@@ -45,8 +45,6 @@ class FileContentResponse(BaseModel):
     content_type: str
     file_name: str
 
-# Initialize agents
-gap_analyzer = GapAnalyzer()
 amendment_generator = AmendmentGenerator()
 
 # Pydantic Models
@@ -101,47 +99,17 @@ async def root():
     return {"message": "Welcome to CompliAgent Horizon API"}
 
 @app.post("/api/analyze", response_model=AnalysisResponse)
-async def analyze_gaps(
-    request: AnalysisRequest
-):
+async def analyze_gaps():
     """
     Analyze gaps between a regulation and a policy
     """
     try:
-        # Get policy content from either direct input or file
-        policy_content = request.policy_content
-        if request.policy_file:
-            policy_content = (await request.policy_file.read()).decode('utf-8')
-        
-        if not policy_content:
-            # Try to fetch policy from S3 if no content provided
-            policy_content = await get_document_from_s3(
-                os.getenv('POLICIES_BUCKET'), 
-                f"{request.policy_id}.txt"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://u4bqsvoj2balkjevdnuxmv4kvi0czgzo.lambda-url.us-west-2.on.aws/"
             )
-        
-        # Fetch regulation content from S3
-        regulation_content = await get_document_from_s3(
-            os.getenv('REGULATIONS_BUCKET'),
-            f"{request.regulation_id}.txt"
-        )
-        
-        # Analyze gaps using the GapAnalyzer agent
-        gap_analysis = await gap_analyzer.analyze_gaps(
-            request.regulation_id,
-            request.policy_id,
-            policy_content
-        )
-        
-        # Generate a unique analysis ID
-        analysis_id = str(uuid.uuid4())
-        
-        return {
-            "analysis_id": analysis_id,
-            "gaps": gap_analysis.get("gaps", []),
-            "summary": gap_analysis.get("summary", ""),
-            "status": "completed"
-        }
+            return response.json()
         
     except HTTPException:
         raise
