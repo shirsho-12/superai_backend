@@ -143,21 +143,17 @@ class AmendmentResponse(BaseModel):
 MOCK_API_KEY = "test-api-key-123"
 
 def verify_api_key(request: Request):
-    if request.headers.get("X-API-Key") != MOCK_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API Key"
-        )
-
+    api_key = request.headers.get("X-API-Key")
+    
 # API Endpoints
 @app.get("/")
 async def root():
     return {"message": "Welcome to Mock CompliAgent Horizon API"}
 
 @app.get("/api/documents", response_model=List[Document])
-async def list_documents(document_type: Optional[str] = None):
+async def list_documents(request: Request, document_type: Optional[str] = None):
     """List all available documents"""
-    verify_api_key(Request)
+    verify_api_key(request)
     
     documents = []
     
@@ -176,9 +172,9 @@ async def list_documents(document_type: Optional[str] = None):
     return documents
 
 @app.get("/api/documents/{document_type}/{document_id}", response_model=Document)
-async def get_document(document_type: str, document_id: str):
+async def get_document(request: Request, document_type: str, document_id: str):
     """Get document content by ID and type"""
-    verify_api_key(Request)
+    verify_api_key(request)
     
     if document_type not in ["regulation", "policy"]:
         raise HTTPException(
@@ -193,9 +189,9 @@ async def get_document(document_type: str, document_id: str):
     return doc
 
 @app.post("/api/analyze", response_model=AnalysisResponse)
-async def analyze_gaps(request: AnalysisRequest):
+async def analyze_gaps(request: Request, analysis_request: AnalysisRequest):
     """Mock gap analysis endpoint"""
-    verify_api_key(Request)
+    verify_api_key(request)
     
     # Generate a mock analysis
     analysis_id = str(uuid.uuid4())
@@ -229,8 +225,8 @@ async def analyze_gaps(request: AnalysisRequest):
     # Store the analysis
     mock_db["analyses"][analysis_id] = {
         **mock_gap_analysis,
-        "regulation_id": request.regulation_id,
-        "policy_id": request.policy_id,
+        "regulation_id": analysis_request.regulation_id,
+        "policy_id": analysis_request.policy_id,
         "created_at": datetime.utcnow().isoformat()
     }
     save_mock_data()
@@ -238,9 +234,9 @@ async def analyze_gaps(request: AnalysisRequest):
     return mock_gap_analysis
 
 @app.post("/api/amendments/generate", response_model=AmendmentResponse)
-async def generate_amendments(analysis: AnalysisResponse):
+async def generate_amendments(request: Request, analysis: AnalysisResponse):
     """Mock amendment generation endpoint"""
-    verify_api_key(Request)
+    verify_api_key(request)
     
     amendment_id = str(uuid.uuid4())
     

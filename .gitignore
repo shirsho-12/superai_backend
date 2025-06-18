@@ -5,6 +5,8 @@
 .env.local
 .env.test
 .env.[mode]
+.env_copy.example
+.env.example
 *.egg-info
 dist
 build
@@ -41,3 +43,4 @@ coverage.xml
 __pycache__
 .mypy_cache
 .pytest_cache
+venv
